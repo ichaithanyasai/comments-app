@@ -118,3 +118,14 @@ Prerequisites
 
   - MySQL must be installed and running on your local machine.
   - The .env file in the backend directory must be properly configured with valid MySQL credentials and a JWT secret.
+
+
+<p align="center">
+  <img src="https://github.com/ichaithanyasai/comments-app/blob/main/registerpage-darkmode.png" width="550" title="hover text"><br>
+  <img src="https://github.com/ichaithanyasai/comments-app/blob/main/index.png" width="550" alt="accessibility text"><br>
+    <img src="https://github.com/ichaithanyasai/comments-app/blob/main/Sign-in-page-light-mode.png" width="550" title="hover text"><br>
+  <img src="https://github.com/ichaithanyasai/comments-app/blob/main/SIgininpage-darkmode.png" width="550" alt="accessibility text"><br>
+    <img src="https://github.com/ichaithanyasai/comments-app/blob/main/Register-page-light-mode.png" width="550" title="hover text">
+   
+</p>
+
