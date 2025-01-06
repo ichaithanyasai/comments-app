@@ -1,60 +1,70 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import {
-  AppBar, Toolbar, Typography, Container, TextField, Button, List, Card, CardContent, Box, Paper
+  AppBar, Toolbar, Typography, Container, TextField, Button, List, Card, CardContent, Box, Paper, CircularProgress, Avatar
 } from '@mui/material';
+import SendIcon from '@mui/icons-material/Send';
+import CommentIcon from '@mui/icons-material/Comment';
 import axios from 'axios';
 import { io } from 'socket.io-client';
 
-let socket;
+const socket = io('http://localhost:5000');
 
 export default function Home() {
-  const [username, setUsername] = useState('');
   const [comment, setComment] = useState('');
   const [comments, setComments] = useState([]);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) {
+    const username = localStorage.getItem('username');
+    if (!username) {
       router.push('/login');
     } else {
       setIsAuthenticated(true);
     }
 
-    axios.get('http://localhost:5000/api/comments')
-      .then(response => setComments(response.data))
-      .catch(error => console.error('Failed to fetch comments:', error));
-
-    socket = io('http://localhost:5000');
+    const fetchComments = async () => {
+      try {
+        const response = await axios.get('http://localhost:5000/api/comments');
+        setComments(response.data);
+      } catch (error) {
+        console.error('Failed to fetch comments:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchComments();
 
     socket.on('update-comments', (newComment) => {
-      setComments(prev => [newComment, ...prev]);
+      setComments((prev) => [newComment, ...prev]);
     });
 
     return () => {
       socket.off('update-comments');
-      socket.disconnect();
     };
   }, [router]);
 
   const handleSubmit = () => {
-    if (username.trim() && comment.trim()) {
+    const username = localStorage.getItem('username');
+    if (username && comment.trim()) {
       axios.post('http://localhost:5000/api/comments', { username, comment })
         .then(() => setComment(''))
         .catch(error => console.error('Failed to post comment:', error));
+    } else {
+      alert('Please enter a comment.');
     }
   };
 
   const formatTimestamp = (timestamp) => {
     const date = new Date(timestamp);
-    return date.toLocaleString();  // You can format it as per your needs
+    return date.toLocaleString();
   };
 
   if (!isAuthenticated) {
     return (
-      <Container maxWidth="sm">
+      <Container maxWidth="sm" style={{ textAlign: 'center', marginTop: '50px' }}>
         <Typography variant="h4" component="h1" gutterBottom>
           Please log in to view comments
         </Typography>
@@ -69,25 +79,20 @@ export default function Home() {
   }
 
   return (
-    <div>
+    <div style={{ backgroundColor: '#f9f9f9', minHeight: '100vh' }}>
       <AppBar position="static">
         <Toolbar>
-          <Typography variant="h6">Real-Time Comments</Typography>
+          <CommentIcon style={{ marginRight: '10px' }} />
+          <Typography variant="h6" sx={{ flexGrow: 1 }}>
+            Real-Time Comments
+          </Typography>
         </Toolbar>
       </AppBar>
-      <Container maxWidth="md" style={{ marginTop: '20px' }}>
-        <Paper style={{ padding: '20px' }}>
+      <Container maxWidth="md" style={{ marginTop: '30px' }}>
+        <Paper elevation={3} style={{ padding: '30px', borderRadius: '15px' }}>
           <Typography variant="h5" component="h2" gutterBottom>
             Add a Comment
           </Typography>
-          <TextField
-            label="Username"
-            variant="outlined"
-            margin="normal"
-            fullWidth
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-          />
           <TextField
             label="Comment"
             variant="outlined"
@@ -95,8 +100,18 @@ export default function Home() {
             fullWidth
             value={comment}
             onChange={(e) => setComment(e.target.value)}
+            multiline
+            rows={4}
+            style={{ marginBottom: '20px' }}
           />
-          <Button variant="contained" color="primary" fullWidth onClick={handleSubmit}>
+          <Button 
+            variant="contained" 
+            color="primary" 
+            fullWidth 
+            onClick={handleSubmit}
+            endIcon={<SendIcon />}
+            style={{ padding: '10px 0', fontSize: '1rem' }}
+          >
             Submit
           </Button>
         </Paper>
@@ -104,23 +119,32 @@ export default function Home() {
           <Typography variant="h5" component="h2" gutterBottom>
             Comments
           </Typography>
-          <List>
-            {comments.map((comment, index) => (
-              <Card key={index} style={{ marginBottom: '10px' }}>
-                <CardContent>
-                  <Typography variant="h6" component="h3">
-                    {comment.username}
-                  </Typography>
-                  <Typography variant="body2" color="textSecondary">
-                    {comment.comment}
-                  </Typography>
-                  <Typography variant="caption" color="textSecondary" display="block" style={{ marginTop: '10px' }}>
-                    {formatTimestamp(comment.timestamp)}
-                  </Typography>
-                </CardContent>
-              </Card>
-            ))}
-          </List>
+          {loading ? (
+            <Box textAlign="center" mt={3}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <List>
+              {comments.map((comment, index) => (
+                <Card key={index} style={{ marginBottom: '15px', borderRadius: '12px', backgroundColor: '#f0f4f8' }} elevation={2}>
+                  <CardContent>
+                    <Box display="flex" alignItems="center" marginBottom="10px">
+                      <Avatar>{comment.username.charAt(0).toUpperCase()}</Avatar>
+                      <Typography variant="h6" component="h3" style={{ marginLeft: '10px' }}>
+                        {comment.username}
+                      </Typography>
+                    </Box>
+                    <Typography variant="body1" style={{ marginBottom: '10px' }}>
+                      {comment.comment}
+                    </Typography>
+                    <Typography variant="caption" color="textSecondary">
+                      {formatTimestamp(comment.timestamp)}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              ))}
+            </List>
+          )}
         </Box>
       </Container>
     </div>
