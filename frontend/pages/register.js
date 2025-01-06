@@ -1,18 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import Avatar from '@mui/material/Avatar';
-import Button from '@mui/material/Button';
-import CssBaseline from '@mui/material/CssBaseline';
-import TextField from '@mui/material/TextField';
-import Link from '@mui/material/Link';
-import Grid from '@mui/material/Grid';
-import Box from '@mui/material/Box';
+import {
+  Avatar, Button, CssBaseline, TextField, Link, Grid, Box, Typography, Container, AppBar, Toolbar
+} from '@mui/material';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
-import Typography from '@mui/material/Typography';
-import Container from '@mui/material/Container';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
-import AppBar from '@mui/material/AppBar';
-import Toolbar from '@mui/material/Toolbar';
 import ThemeToggle from './ThemeToggle';
 import axios from 'axios';
 
@@ -20,8 +12,17 @@ const RegisterPage = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isDarkMode, setIsDarkMode] = useState(true);
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('darkMode') === 'true';
+    }
+    return true; // Default to dark mode
+  });
   const router = useRouter();
+
+  useEffect(() => {
+    localStorage.setItem('darkMode', isDarkMode);
+  }, [isDarkMode]);
 
   const theme = createTheme({
     palette: {
@@ -36,6 +37,7 @@ const RegisterPage = () => {
       router.push('/login');
     } catch (error) {
       console.error('Registration failed:', error);
+      alert('Registration failed. Please try again.');
     }
   };
 

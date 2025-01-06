@@ -1,10 +1,12 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import { AppBar, Toolbar, Typography, Container, TextField, Button, List, ListItem, ListItemText, Paper, Card, CardContent, CardActions, Box } from '@mui/material';
+import {
+  AppBar, Toolbar, Typography, Container, TextField, Button, List, Card, CardContent, Box, Paper
+} from '@mui/material';
 import axios from 'axios';
 import { io } from 'socket.io-client';
 
-const socket = io('http://localhost:5000');
+let socket;
 
 export default function Home() {
   const [username, setUsername] = useState('');
@@ -21,14 +23,34 @@ export default function Home() {
       setIsAuthenticated(true);
     }
 
-    axios.get('http://localhost:5000/api/comments').then(response => setComments(response.data));
+    axios.get('http://localhost:5000/api/comments')
+      .then(response => setComments(response.data))
+      .catch(error => console.error('Failed to fetch comments:', error));
 
-    socket.on('update-comments', newComment => {
+    socket = io('http://localhost:5000');
+
+    socket.on('update-comments', (newComment) => {
       setComments(prev => [newComment, ...prev]);
     });
 
-    return () => socket.off('update-comments');
-  }, []);
+    return () => {
+      socket.off('update-comments');
+      socket.disconnect();
+    };
+  }, [router]);
+
+  const handleSubmit = () => {
+    if (username.trim() && comment.trim()) {
+      axios.post('http://localhost:5000/api/comments', { username, comment })
+        .then(() => setComment(''))
+        .catch(error => console.error('Failed to post comment:', error));
+    }
+  };
+
+  const formatTimestamp = (timestamp) => {
+    const date = new Date(timestamp);
+    return date.toLocaleString();  // You can format it as per your needs
+  };
 
   if (!isAuthenticated) {
     return (
@@ -50,9 +72,7 @@ export default function Home() {
     <div>
       <AppBar position="static">
         <Toolbar>
-          <Typography variant="h6">
-            Real-Time Comments
-          </Typography>
+          <Typography variant="h6">Real-Time Comments</Typography>
         </Toolbar>
       </AppBar>
       <Container maxWidth="md" style={{ marginTop: '20px' }}>
@@ -76,10 +96,7 @@ export default function Home() {
             value={comment}
             onChange={(e) => setComment(e.target.value)}
           />
-          <Button variant="contained" color="primary" fullWidth onClick={() => {
-            axios.post('http://localhost:5000/api/comments', { username, comment });
-            setComment('');
-          }}>
+          <Button variant="contained" color="primary" fullWidth onClick={handleSubmit}>
             Submit
           </Button>
         </Paper>
@@ -93,9 +110,12 @@ export default function Home() {
                 <CardContent>
                   <Typography variant="h6" component="h3">
                     {comment.username}
-                  </Typography> 
+                  </Typography>
                   <Typography variant="body2" color="textSecondary">
                     {comment.comment}
+                  </Typography>
+                  <Typography variant="caption" color="textSecondary" display="block" style={{ marginTop: '10px' }}>
+                    {formatTimestamp(comment.timestamp)}
                   </Typography>
                 </CardContent>
               </Card>
